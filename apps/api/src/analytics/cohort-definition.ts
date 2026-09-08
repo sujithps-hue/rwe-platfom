@@ -1,6 +1,6 @@
 export type CohortCriterion =
-  | { kind: 'has_condition'; conceptCode: string; withinDays?: number }
-  | { kind: 'has_drug_exposure'; conceptCode: string; withinDays?: number }
+  | { kind: 'has_condition'; conceptId: number; includeDescendants?: boolean; withinDays?: number }
+  | { kind: 'has_drug_exposure'; conceptId: number; includeDescendants?: boolean; withinDays?: number }
   | { kind: 'has_nlp_concept'; conceptCode: string; polarity?: 'positive' | 'negated' }
   | { kind: 'age_between'; minYears: number; maxYears: number }
   | { kind: 'visit_type'; visitConcept: 'inpatient' | 'outpatient' | 'emergency' | 'telehealth' };

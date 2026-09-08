@@ -57,8 +57,22 @@ export class CareManagementService {
     const [personRows, visits, conditions, drugExposures, nlpConcepts] = await Promise.all([
       this.prisma.$queryRaw<PersonRow[]>`SELECT * FROM ${schema}.person WHERE person_id = ${personId}::uuid`,
       this.prisma.$queryRaw<VisitRow[]>`SELECT * FROM ${schema}.visit_occurrence WHERE person_id = ${personId}::uuid`,
-      this.prisma.$queryRaw<ConditionRow[]>`SELECT * FROM ${schema}.condition_occurrence WHERE person_id = ${personId}::uuid`,
-      this.prisma.$queryRaw<DrugRow[]>`SELECT * FROM ${schema}.drug_exposure WHERE person_id = ${personId}::uuid`,
+      // Joined to omop_vocabulary.concept for a human-readable name — condition_occurrence
+      // itself has no display-name column, matching the real OMOP CDM spec (see
+      // tenant_schema_template.sql's header comment on the concept_id/source_value/
+      // source_concept_id convention).
+      this.prisma.$queryRaw<ConditionRow[]>`
+        SELECT co.*, c.concept_name AS condition_concept_name
+        FROM ${schema}.condition_occurrence co
+        LEFT JOIN omop_vocabulary.concept c ON c.concept_id = co.condition_concept_id
+        WHERE co.person_id = ${personId}::uuid
+      `,
+      this.prisma.$queryRaw<DrugRow[]>`
+        SELECT de.*, c.concept_name AS drug_concept_name
+        FROM ${schema}.drug_exposure de
+        LEFT JOIN omop_vocabulary.concept c ON c.concept_id = de.drug_concept_id
+        WHERE de.person_id = ${personId}::uuid
+      `,
       this.prisma.$queryRaw<NlpRow[]>`SELECT * FROM ${schema}.nlp_extracted_concept WHERE person_id = ${personId}::uuid`,
     ]);
 
@@ -68,10 +82,10 @@ export class CareManagementService {
     const person: Person = {
       personId: p.person_id,
       sourcePatientId: p.source_patient_id,
-      genderConcept: p.gender_concept,
-      birthYear: p.birth_year,
-      raceConcept: p.race_concept,
-      ethnicityConcept: p.ethnicity_concept,
+      genderConcept: p.gender_source_value,
+      birthYear: p.year_of_birth,
+      raceConcept: p.race_source_value,
+      ethnicityConcept: p.ethnicity_source_value,
       locationRegion: p.location_region,
       sourceConnectorId: p.source_connector_id,
       createdAt: p.created_at,
@@ -91,10 +105,10 @@ export class CareManagementService {
 interface PersonRow {
   person_id: string;
   source_patient_id: string;
-  gender_concept: string | null;
-  birth_year: number | null;
-  race_concept: string | null;
-  ethnicity_concept: string | null;
+  gender_source_value: string | null;
+  year_of_birth: number | null;
+  race_source_value: string | null;
+  ethnicity_source_value: string | null;
   location_region: string | null;
   source_connector_id: string;
   created_at: Date;
@@ -102,7 +116,8 @@ interface PersonRow {
 interface VisitRow {
   visit_occurrence_id: string;
   person_id: string;
-  visit_concept: VisitOccurrence['visitConcept'];
+  visit_concept_id: number;
+  visit_source_value: VisitOccurrence['visitConcept'] | null;
   visit_start_date: Date;
   visit_end_date: Date | null;
   care_site: string | null;
@@ -112,8 +127,9 @@ interface ConditionRow {
   condition_occurrence_id: string;
   person_id: string;
   visit_occurrence_id: string | null;
-  condition_concept_code: string;
-  condition_concept_name: string | null;
+  condition_concept_id: number;
+  condition_source_value: string;
+  condition_concept_name: string | null; // joined from omop_vocabulary.concept, see loadPatientBundle's query
   condition_start_date: Date;
   condition_end_date: Date | null;
   source_connector_id: string;
@@ -122,8 +138,9 @@ interface DrugRow {
   drug_exposure_id: string;
   person_id: string;
   visit_occurrence_id: string | null;
-  drug_concept_code: string;
-  drug_concept_name: string | null;
+  drug_concept_id: number;
+  drug_source_value: string;
+  drug_concept_name: string | null; // joined from omop_vocabulary.concept, see loadPatientBundle's query
   exposure_start_date: Date;
   exposure_end_date: Date | null;
   dose: string | null;
@@ -146,7 +163,7 @@ function mapVisitRow(v: VisitRow): VisitOccurrence {
   return {
     visitOccurrenceId: v.visit_occurrence_id,
     personId: v.person_id,
-    visitConcept: v.visit_concept,
+    visitConcept: v.visit_source_value ?? 'outpatient',
     visitStartDate: v.visit_start_date.toISOString().slice(0, 10),
     visitEndDate: v.visit_end_date ? v.visit_end_date.toISOString().slice(0, 10) : null,
     careSite: v.care_site,
@@ -158,7 +175,7 @@ function mapConditionRow(c: ConditionRow): ConditionOccurrence {
     conditionOccurrenceId: c.condition_occurrence_id,
     personId: c.person_id,
     visitOccurrenceId: c.visit_occurrence_id,
-    conditionConceptCode: c.condition_concept_code,
+    conditionConceptCode: c.condition_source_value,
     conditionConceptName: c.condition_concept_name,
     conditionStartDate: c.condition_start_date.toISOString().slice(0, 10),
     conditionEndDate: c.condition_end_date ? c.condition_end_date.toISOString().slice(0, 10) : null,
@@ -170,7 +187,7 @@ function mapDrugRow(d: DrugRow): DrugExposure {
     drugExposureId: d.drug_exposure_id,
     personId: d.person_id,
     visitOccurrenceId: d.visit_occurrence_id,
-    drugConceptCode: d.drug_concept_code,
+    drugConceptCode: d.drug_source_value,
     drugConceptName: d.drug_concept_name,
     exposureStartDate: d.exposure_start_date.toISOString().slice(0, 10),
     exposureEndDate: d.exposure_end_date ? d.exposure_end_date.toISOString().slice(0, 10) : null,

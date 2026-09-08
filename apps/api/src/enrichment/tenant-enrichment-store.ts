@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { ClinicalNote, NlpExtractedConcept } from '@rwe/common-data-model';
 import { EnrichmentStore } from '@rwe/nlp-enrichment';
 import { PrismaService } from '../common/prisma.service';
+import { ConceptMapper } from '../common/concept-mapper';
 
 const SCHEMA_NAME_RE = /^tenant_[a-z0-9_]+$/;
 
@@ -21,7 +22,10 @@ function requireValidSchema(schemaName: string): Prisma.Sql {
  */
 @Injectable()
 export class TenantEnrichmentStore implements EnrichmentStore {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly conceptMapper: ConceptMapper,
+  ) {}
 
   async fetchPendingNotes(schemaName: string, limit: number): Promise<ClinicalNote[]> {
     const schema = requireValidSchema(schemaName);
@@ -45,9 +49,13 @@ export class TenantEnrichmentStore implements EnrichmentStore {
   async saveExtractedConcepts(schemaName: string, concepts: NlpExtractedConcept[]): Promise<void> {
     const schema = requireValidSchema(schemaName);
     for (const c of concepts) {
+      // SNOMED CT is itself the OMOP-standard vocabulary for the concepts this pipeline extracts
+      // (see packages/nlp-enrichment/src/terminology.ts), so the same standard-code resolution
+      // used for condition_occurrence applies here.
+      const resolved = await this.conceptMapper.resolveByStandardCode('SNOMED', c.conceptCode);
       await this.prisma.$executeRaw`
-        INSERT INTO ${schema}.nlp_extracted_concept (nlp_extracted_concept_id, clinical_note_id, person_id, concept_code, concept_name, polarity, severity, confidence, extracted_at, pipeline_id)
-        VALUES (gen_random_uuid(), ${c.clinicalNoteId}::uuid, ${c.personId}::uuid, ${c.conceptCode}, ${c.conceptName}, ${c.polarity}, ${c.severity}, ${c.confidence}, ${c.extractedAt}, ${c.pipelineId})
+        INSERT INTO ${schema}.nlp_extracted_concept (nlp_extracted_concept_id, clinical_note_id, person_id, concept_id, concept_code, concept_name, polarity, severity, confidence, extracted_at, pipeline_id)
+        VALUES (gen_random_uuid(), ${c.clinicalNoteId}::uuid, ${c.personId}::uuid, ${resolved.conceptId}, ${c.conceptCode}, ${c.conceptName}, ${c.polarity}, ${c.severity}, ${c.confidence}, ${c.extractedAt}, ${c.pipelineId})
       `;
     }
   }

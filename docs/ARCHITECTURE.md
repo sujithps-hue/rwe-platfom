@@ -74,12 +74,17 @@ Before onboarding a real tenant with real PHI/PII in a given region:
 - [ ] Penetration test and access review completed
 - [ ] Data retention schedule confirmed against the framework's minimum/maximum (see `COMPLIANCE.md`)
 
-## Why an OMOP-CDM-inspired model, not raw FHIR storage
+## Why an OMOP CDM model, not raw FHIR storage
 
 FHIR is excellent as an **interoperability/transport** format but is a poor fit for population-level
 cohort analytics (deeply nested, versioned resources, no stable star-schema for OLAP-style queries). OMOP
 CDM is the de facto standard for real-world-evidence analytics (used by OHDSI, and broadly similar to what
 NeuroBlu itself normalizes into) and has mature tooling for cohort definitions and standardized
 vocabularies (SNOMED, RxNorm, LOINC). Connectors are therefore responsible for **FHIR/HL7v2/CSV → CDM**
-mapping; the CDM is the single schema that all analytics and dashboards are built against, independent of
-which EHR the data came from.
+mapping, emitting raw source codes; a separate standardization step resolves those to real OMOP
+`concept_id`s against the shared Standardized Vocabulary schema before anything is persisted — see
+[`OMOP_VOCABULARY.md`](OMOP_VOCABULARY.md) for the vocabulary tables, the mapping algorithm, and how
+production deployments load the real ~10M-row OHDSI vocabulary release. The CDM is the single schema
+that all analytics and dashboards are built against, independent of which EHR the data came from —
+and because every fact is standardized to a `concept_id`, a cohort query matches the same clinical
+fact regardless of which connector's own source coding produced it.

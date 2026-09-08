@@ -23,8 +23,10 @@ product**, rather than a single-tenant research database:
 1. **Bring-your-own-EHR, bring-your-own-tenancy.** Any EHR (Epic, Cerner/Oracle Health, Allscripts, a
    home-grown system) plugs in through a connector SDK. Each customer's data lives in its own logically
    (or physically) isolated tenancy, in a region the customer chooses.
-2. **Common data model.** All connectors normalize source data into an OMOP-CDM-inspired schema
-   (`packages/common-data-model`) so analytics, cohort definitions, and dashboards are connector-agnostic.
+2. **Common data model.** All connectors normalize source data into a common schema
+   (`packages/common-data-model`) standardized against the real OMOP Standardized Vocabulary
+   (`concept_id`, not raw source codes — see [`docs/OMOP_VOCABULARY.md`](docs/OMOP_VOCABULARY.md))
+   so analytics, cohort definitions, and dashboards are connector-agnostic.
 3. **Compliance is a first-class runtime concern, not a checklist.** A policy engine
    (`packages/compliance-engine`) resolves the applicable frameworks per tenant/region and enforces them
    at request time: residency routing, consent gating, de-identification, audit logging, retention, and
@@ -43,7 +45,8 @@ packages/
   connector-sdk/        The pluggable EHR connector interface + registry that any adapter implements
   connector-fhir/       Reference connector: FHIR R4 (Epic/Cerner/any FHIR-compliant EHR)
   connector-files/      Reference connector: HL7v2 and CSV/flat-file batch ingestion
-  common-data-model/    Prisma schema for the OMOP-CDM-inspired multi-tenant data model + RLS migration
+  common-data-model/    Prisma schema for the control plane, per-tenant OMOP CDM schema template, and the
+                        shared OMOP Standardized Vocabulary schema + RLS migration
 infra/
   docker/               Local dev docker-compose stack (Postgres, Redis, API, web)
   terraform/            Skeleton for multi-region deployment (US, EU, UAE/ME, APAC)
@@ -53,6 +56,7 @@ docs/
   MULTI_TENANCY.md       Isolation model (schema-per-tenant + RLS) and region placement
   CONNECTORS.md         How to build a new EHR connector
   MONETIZATION.md       Plans, metering, billing integration
+  OMOP_VOCABULARY.md    The OMOP Standardized Vocabulary schema, concept_id mapping, and how to load real vocabulary data
 ```
 
 ## Getting started (local dev)
@@ -75,10 +79,16 @@ npm run build --workspace=packages/predictive-models
 # Postgres (this repo ships prisma/schema.prisma and rls_policies.sql, but not a committed
 # migrations/ directory, since that must be generated against a real database connection):
 npm run prisma:generate --workspace=packages/common-data-model
-DATABASE_URL=postgres://rwe:rwe_dev_password@localhost:5432/rwe_platform \
-  npx prisma migrate dev --schema packages/common-data-model/prisma/schema.prisma --name init
-DATABASE_URL=postgres://rwe:rwe_dev_password@localhost:5432/rwe_platform \
-  psql "$DATABASE_URL" -f packages/common-data-model/prisma/rls_policies.sql
+export DATABASE_URL=postgres://rwe:rwe_dev_password@localhost:5432/rwe_platform
+npx prisma migrate dev --schema packages/common-data-model/prisma/schema.prisma --name init
+psql "$DATABASE_URL" -f packages/common-data-model/prisma/rls_policies.sql
+
+# Once per cluster (not per tenant): the shared OMOP Standardized Vocabulary schema — see
+# docs/OMOP_VOCABULARY.md for what's in the bootstrap seed vs. what a real deployment loads.
+psql "$DATABASE_URL" -f packages/common-data-model/prisma/omop_vocabulary_schema.sql
+psql "$DATABASE_URL" -f packages/common-data-model/prisma/omop_vocabulary_seed.sql
+psql "$DATABASE_URL" -f packages/common-data-model/prisma/omop_vocabulary_constraints.sql
+
 npm run prisma:seed --workspace=packages/common-data-model
 
 npm run start:dev --workspace=apps/api

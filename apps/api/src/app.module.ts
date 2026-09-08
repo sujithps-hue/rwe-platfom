@@ -11,6 +11,7 @@ import { BillingModule } from './billing/billing.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { CareManagementModule } from './care-management/care-management.module';
 import { EnrichmentModule } from './enrichment/enrichment.module';
+import { VocabularyModule } from './vocabulary/vocabulary.module';
 import { AuditInterceptor } from './common/audit.interceptor';
 
 @Module({
@@ -25,16 +26,18 @@ import { AuditInterceptor } from './common/audit.interceptor';
     AnalyticsModule,
     CareManagementModule,
     EnrichmentModule,
+    VocabularyModule,
   ],
   providers: [{ provide: APP_INTERCEPTOR, useClass: AuditInterceptor }],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // Applied to every route except auth/tenant-provisioning, which by definition run before a
-    // tenant can be resolved (see docs/ARCHITECTURE.md#request-lifecycle).
+    // Applied to every route except auth/tenant-provisioning (which by definition run before a
+    // tenant can be resolved — see docs/ARCHITECTURE.md#request-lifecycle) and vocabulary, which
+    // is shared reference data with no tenant scoping at all (see omop_vocabulary_schema.sql).
     consumer
       .apply(TenantContextMiddleware)
-      .exclude('auth/(.*)', 'tenants', 'tenants/(.*)')
+      .exclude('auth/(.*)', 'tenants', 'tenants/(.*)', 'vocabulary/(.*)')
       .forRoutes('*');
   }
 }

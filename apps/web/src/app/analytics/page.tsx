@@ -2,24 +2,34 @@
 
 import { useState } from 'react';
 import { useAuthedApi } from '@/lib/use-authed-api';
+import { ConceptPicker, ConceptSearchResult } from '@/components/ConceptPicker';
 
 type CriterionKind = 'has_condition' | 'has_drug_exposure' | 'has_nlp_concept' | 'age_between' | 'visit_type';
 
 interface Criterion {
   kind: CriterionKind;
-  conceptCode?: string;
+  conceptId?: number; // has_condition / has_drug_exposure — resolved via ConceptPicker
+  conceptLabel?: string; // display only, not sent to the API
+  includeDescendants?: boolean;
+  conceptCode?: string; // has_nlp_concept — matched by SNOMED code directly, see docs/OMOP_VOCABULARY.md
   minYears?: number;
   maxYears?: number;
   visitConcept?: string;
 }
 
 const CRITERION_LABELS: Record<CriterionKind, string> = {
-  has_condition: 'Has condition (SNOMED code)',
-  has_drug_exposure: 'Has drug exposure (RxNorm code)',
+  has_condition: 'Has condition',
+  has_drug_exposure: 'Has drug exposure',
   has_nlp_concept: 'Has NLP-extracted concept (e.g. suicidal ideation: 6471006)',
   age_between: 'Age between',
   visit_type: 'Has visit of type',
 };
+
+/** Strips UI-only fields (conceptLabel) before sending a criterion to the API. */
+function toApiCriterion(c: Criterion) {
+  const { conceptLabel: _conceptLabel, ...rest } = c;
+  return rest;
+}
 
 export default function AnalyticsPage() {
   const { call, session } = useAuthedApi();
@@ -34,7 +44,7 @@ export default function AnalyticsPage() {
   }
 
   function addCriterion() {
-    setCriteria((prev) => [...prev, { kind: 'has_condition', conceptCode: '' }]);
+    setCriteria((prev) => [...prev, { kind: 'has_condition' }]);
   }
 
   function removeCriterion(index: number) {
@@ -46,7 +56,7 @@ export default function AnalyticsPage() {
     setLoading(true);
     setResult(null);
     try {
-      const definition = { name, criteria };
+      const definition = { name, criteria: criteria.map(toApiCriterion) };
       const res = await call<{ matchingPatients: number }>('/analytics/cohorts/count', { method: 'POST', body: definition });
       setResult(res);
     } catch (err) {
@@ -62,9 +72,9 @@ export default function AnalyticsPage() {
     <div>
       <h1 className="page-title">Cohort Builder</h1>
       <p className="page-subtitle">
-        No-code cohort definition against your tenant&apos;s own data — the NeuroBlu-Analytics-equivalent
-        piece of the platform (see docs/PRODUCT.md). Returns an aggregate count only; a row-level export is
-        a separate, audited action.
+        No-code cohort definition against your tenant&apos;s own data, standardized to real OMOP concept_ids
+        (docs/OMOP_VOCABULARY.md) — the NeuroBlu-Analytics-equivalent piece of the platform (docs/PRODUCT.md).
+        Returns an aggregate count only; a row-level export is a separate, audited action.
       </p>
 
       <div className="card">
@@ -74,27 +84,51 @@ export default function AnalyticsPage() {
         </div>
 
         {criteria.map((criterion, i) => (
-          <div className="form-row" key={i} style={{ alignItems: 'flex-end', marginBottom: 14 }}>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label>Criterion</label>
-              <select value={criterion.kind} onChange={(e) => updateCriterion(i, { kind: e.target.value as CriterionKind })}>
-                {Object.entries(CRITERION_LABELS).map(([kind, label]) => (
-                  <option key={kind} value={kind}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+          <div key={i} style={{ marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
+            <div className="form-row" style={{ alignItems: 'flex-end', marginBottom: 8 }}>
+              <div className="field" style={{ marginBottom: 0 }}>
+                <label>Criterion</label>
+                <select value={criterion.kind} onChange={(e) => updateCriterion(i, { kind: e.target.value as CriterionKind })}>
+                  {Object.entries(CRITERION_LABELS).map(([kind, label]) => (
+                    <option key={kind} value={kind}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button type="button" className="secondary" onClick={() => removeCriterion(i)}>
+                Remove
+              </button>
             </div>
 
-            {(criterion.kind === 'has_condition' || criterion.kind === 'has_drug_exposure' || criterion.kind === 'has_nlp_concept') && (
+            {(criterion.kind === 'has_condition' || criterion.kind === 'has_drug_exposure') && (
+              <>
+                <ConceptPicker
+                  domain={criterion.kind === 'has_condition' ? 'Condition' : 'Drug'}
+                  selected={criterion.conceptId ? { conceptId: criterion.conceptId, conceptName: criterion.conceptLabel ?? String(criterion.conceptId) } : null}
+                  onSelect={(c: ConceptSearchResult) => updateCriterion(i, { conceptId: c.conceptId, conceptLabel: c.conceptName })}
+                />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+                  <input
+                    type="checkbox"
+                    style={{ width: 'auto' }}
+                    checked={criterion.includeDescendants ?? false}
+                    onChange={(e) => updateCriterion(i, { includeDescendants: e.target.checked })}
+                  />
+                  <span className="muted">Include descendant concepts (via concept_ancestor)</span>
+                </label>
+              </>
+            )}
+
+            {criterion.kind === 'has_nlp_concept' && (
               <div className="field" style={{ marginBottom: 0 }}>
-                <label>Concept code</label>
+                <label>SNOMED concept code</label>
                 <input value={criterion.conceptCode ?? ''} onChange={(e) => updateCriterion(i, { conceptCode: e.target.value })} />
               </div>
             )}
 
             {criterion.kind === 'age_between' && (
-              <>
+              <div className="form-row">
                 <div className="field" style={{ marginBottom: 0 }}>
                   <label>Min age</label>
                   <input type="number" value={criterion.minYears ?? 0} onChange={(e) => updateCriterion(i, { minYears: Number(e.target.value) })} />
@@ -103,7 +137,7 @@ export default function AnalyticsPage() {
                   <label>Max age</label>
                   <input type="number" value={criterion.maxYears ?? 120} onChange={(e) => updateCriterion(i, { maxYears: Number(e.target.value) })} />
                 </div>
-              </>
+              </div>
             )}
 
             {criterion.kind === 'visit_type' && (
@@ -117,10 +151,6 @@ export default function AnalyticsPage() {
                 </select>
               </div>
             )}
-
-            <button type="button" className="secondary" onClick={() => removeCriterion(i)}>
-              Remove
-            </button>
           </div>
         ))}
 

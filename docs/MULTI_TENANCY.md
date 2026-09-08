@@ -7,10 +7,13 @@ Two layers of defense, deliberately redundant:
 1. **Schema-per-tenant** — each tenant's clinical data (the CDM tables: `person`, `visit_occurrence`,
    `condition_occurrence`, `drug_exposure`, `measurement`, `observation`) lives in its own Postgres schema
    (`tenant_<id>`), created by `TenantsModule.provision()` from the template in
-   `packages/common-data-model/prisma/schema.prisma`. This gives hard blast-radius containment — a bug in
-   a query can't accidentally join across tenants because the tables aren't in the same namespace — and
-   makes physically exporting or deleting one tenant's data (GDPR erasure, offboarding) a schema-level
-   operation.
+   `packages/common-data-model/prisma/tenant_schema_template.sql`. This gives hard blast-radius containment
+   — a bug in a query can't accidentally join across tenants because the tables aren't in the same
+   namespace — and makes physically exporting or deleting one tenant's data (GDPR erasure, offboarding) a
+   schema-level operation. Every tenant schema's clinical tables reference the cluster's shared
+   `omop_vocabulary` schema (concept_id foreign keys) — see `docs/OMOP_VOCABULARY.md` — so that schema
+   must be provisioned once per cluster **before** the first tenant is provisioned; `TenantsModule.provision()`
+   does not create it.
 2. **Row-Level Security (RLS)** on shared/control-plane tables (`tenant`, `user`, `consent_record`,
    `audit_log`, `subscription`) that are cheaper to keep in one table but must never leak across tenants.
    Every such table has `tenant_id` plus a policy:

@@ -6,7 +6,7 @@ plugs its own data in, in its own tenancy, region, and compliance posture.
 
 | NeuroBlu pillar | This platform's equivalent | Where |
 |---|---|---|
-| **NeuroBlu Data** — 32M+ patients, 20yr longitudinal, NLP-enriched | **Common Data Model + NLP Enrichment Pipeline** — any connected EHR's data is normalized into the shared CDM and enriched by an NLP pass over clinical notes (symptom/severity extraction, SDOH tagging) so structured *and* unstructured data both feed analytics | `packages/common-data-model`, `packages/nlp-enrichment` |
+| **NeuroBlu Data** — 32M+ patients, 20yr longitudinal, NLP-enriched | **OMOP CDM + Standardized Vocabulary + NLP Enrichment Pipeline** — any connected EHR's data is normalized into the shared CDM, standardized to real OMOP `concept_id`s (not raw source codes — see `docs/OMOP_VOCABULARY.md`), and enriched by an NLP pass over clinical notes (symptom/severity extraction, SDOH tagging) so structured *and* unstructured data both feed analytics, connector-agnostically | `packages/common-data-model`, `packages/nlp-enrichment` |
 | **NeuroBlu Analytics** — no-code UI + R/Python code studio | **Cohort Builder (no-code) + Code Studio (notebook)** inside a browser-based Trusted Research Environment — no raw data ever leaves the TRE; only aggregate/exported results do | `apps/web` (`/analytics`, `/studio`), `apps/api/src/analytics` |
 | **NeuroBlu Health** — care management, predictive models for clinicians | **Care Management Module** — risk-stratification and trajectory-prediction models surfaced to clinicians at point of care, trained per-tenant on that tenant's own (in-region) data, never pooled across tenants without explicit multi-tenant research consent | `packages/predictive-models`, `apps/api/src/care-management` |
 

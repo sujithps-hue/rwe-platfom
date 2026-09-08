@@ -32,7 +32,10 @@ liability.
 3. `mapToCdm` must emit records typed against `@rwe/common-data-model`'s `Person`, `VisitOccurrence`,
    `ConditionOccurrence`, `DrugExposure`, `Measurement`, and `Observation` shapes, using standard
    vocabularies where possible (SNOMED CT for conditions, RxNorm for drugs, LOINC for measurements) so the
-   record is comparable across every other connector.
+   record is comparable across every other connector. Emit the raw source code/value here — never a
+   resolved `concept_id` — the platform's write path (`apps/api/src/common/tenant-cdm-writer.ts`)
+   standardizes every record to a real OMOP concept via `ConceptMapper` before persistence; see
+   `docs/OMOP_VOCABULARY.md`.
 4. Register the connector in `apps/api/src/connectors/connector-registry.ts`.
 5. Every record your connector produces is passed through the compliance engine automatically by
    `ConnectorsModule` before being persisted — you do not need to (and should not) implement consent
