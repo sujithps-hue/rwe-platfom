@@ -1,7 +1,7 @@
 {
   "name": "@rwe/predictive-models",
   "version": "0.1.0",
-  "description": "NeuroBlu-Health-equivalent care management module: risk-stratification / trajectory-prediction models, trained and scored per-tenant on that tenant's own in-region data only.",
+  "description": "Care management module: risk-stratification / trajectory-prediction models, trained and scored per-tenant on that tenant's own in-region data only.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

@@ -2,7 +2,7 @@
   "name": "rwe-platform",
   "private": true,
   "version": "0.1.0",
-  "description": "Pluggable, multi-tenant real-world-evidence / EHR analytics platform (NeuroBlu-style) with region-aware compliance (HIPAA, GDPR, UAE PDPL, PDPA/PIPL, and more).",
+  "description": "Pluggable, multi-tenant real-world-evidence / EHR analytics platform with region-aware compliance (HIPAA, GDPR, UAE PDPL, PDPA/PIPL, and more).",
   "workspaces": [
     "packages/*",
     "apps/*"

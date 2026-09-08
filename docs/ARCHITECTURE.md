@@ -78,9 +78,9 @@ Before onboarding a real tenant with real PHI/PII in a given region:
 
 FHIR is excellent as an **interoperability/transport** format but is a poor fit for population-level
 cohort analytics (deeply nested, versioned resources, no stable star-schema for OLAP-style queries). OMOP
-CDM is the de facto standard for real-world-evidence analytics (used by OHDSI, and broadly similar to what
-NeuroBlu itself normalizes into) and has mature tooling for cohort definitions and standardized
-vocabularies (SNOMED, RxNorm, LOINC). Connectors are therefore responsible for **FHIR/HL7v2/CSV → CDM**
+CDM is the de facto standard for real-world-evidence analytics (used by OHDSI) and has mature tooling for
+cohort definitions and standardized vocabularies (SNOMED, RxNorm, LOINC). Connectors are therefore
+responsible for **FHIR/HL7v2/CSV → CDM**
 mapping, emitting raw source codes; a separate standardization step resolves those to real OMOP
 `concept_id`s against the shared Standardized Vocabulary schema before anything is persisted — see
 [`OMOP_VOCABULARY.md`](OMOP_VOCABULARY.md) for the vocabulary tables, the mapping algorithm, and how

@@ -42,7 +42,7 @@ export default function CareManagementPage() {
     <div>
       <h1 className="page-title">Care Management</h1>
       <p className="page-subtitle">
-        The NeuroBlu-Health-equivalent module: risk-stratification and trajectory-prediction models,
+        The Care Management pillar: risk-stratification and trajectory-prediction models,
         scored per-patient on your tenant&apos;s own data only (docs/PRODUCT.md).
       </p>
 

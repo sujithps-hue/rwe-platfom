@@ -9,8 +9,8 @@ import { CohortCriterion, CohortDefinition } from './cohort-definition';
 const SCHEMA_NAME_RE = /^tenant_[a-z0-9_]+$/;
 
 /**
- * The no-code Cohort Builder's execution engine (the NeuroBlu-Analytics-equivalent piece —
- * docs/PRODUCT.md). Every criterion compiles to a parameterized `EXISTS`/`WHERE` fragment over
+ * The no-code Cohort Builder's execution engine (the Analytics pillar — docs/PRODUCT.md). Every
+ * criterion compiles to a parameterized `EXISTS`/`WHERE` fragment over
  * the tenant's own CDM schema, filtered by standard `concept_id` — the entire point of
  * standardizing to OMOP is that this query matches the same clinical fact regardless of which
  * connector's own source coding produced it (docs/OMOP_VOCABULARY.md). Nothing here ever joins

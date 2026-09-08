@@ -1,10 +1,9 @@
 # RWE Platform
 
-A pluggable, multi-tenant **Real-World-Evidence / EHR analytics platform** — architecturally similar to
-[Holmusk NeuroBlu](https://neuroblu.com) — that lets any EHR vendor, hospital, or clinic connect their own
-patient data into a secure, isolated tenancy, normalize it into a common research data model, and run
-cohort analytics on it, while the platform operator monetizes the offering through metered/subscription
-billing.
+A pluggable, multi-tenant **Real-World-Evidence / EHR analytics platform** that lets any EHR vendor,
+hospital, or clinic connect their own patient data into a secure, isolated tenancy, normalize it into a
+common research data model, and run cohort analytics on it, while the platform operator monetizes the
+offering through metered/subscription billing.
 
 The defining constraint of this build is **regulatory portability**: the same codebase must be deployable,
 unmodified, for a clinic in the US (HIPAA), a hospital group in the EU (GDPR), a provider in the UAE
@@ -14,11 +13,11 @@ selected automatically per tenant. See [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md
 
 ## Why this shape
 
-NeuroBlu itself is a curated real-world-data (RWD) platform: EHR data is extracted, transformed into a
-common data model (CDM), de-identified/pseudonymized, and exposed through a cohort-builder + analytics UI
-to researchers and life-science customers, with the underlying provenance staying inside the health
-system's governance boundary. This project reproduces that shape as a **pluggable, white-labelable
-product**, rather than a single-tenant research database:
+A curated real-world-data (RWD) platform generally works like this: EHR data is extracted, transformed
+into a common data model (CDM), de-identified/pseudonymized, and exposed through a cohort-builder +
+analytics UI to researchers and life-science customers, with the underlying provenance staying inside
+the health system's governance boundary. This project builds that shape as a **pluggable,
+white-labelable product**, rather than a single-tenant research database:
 
 1. **Bring-your-own-EHR, bring-your-own-tenancy.** Any EHR (Epic, Cerner/Oracle Health, Allscripts, a
    home-grown system) plugs in through a connector SDK. Each customer's data lives in its own logically

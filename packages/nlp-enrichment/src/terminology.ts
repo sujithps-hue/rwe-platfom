@@ -1,10 +1,10 @@
 import { ConceptTerm } from './types';
 
 /**
- * Seed terminology oriented toward behavioral health documentation (matching the domain NeuroBlu
- * itself focuses on), but the pipeline and its plug interface are not behavioral-health-specific —
- * a tenant extends `CONCEPT_TERMS` (or supplies an entirely different pipeline) for other
- * specialties. Codes are illustrative SNOMED CT concept ids for common behavioral-health terms.
+ * Seed terminology oriented toward behavioral health documentation, but the pipeline and its plug
+ * interface are not behavioral-health-specific — a tenant extends `CONCEPT_TERMS` (or supplies an
+ * entirely different pipeline) for other specialties. Codes are illustrative SNOMED CT concept ids
+ * for common behavioral-health terms.
  */
 export const CONCEPT_TERMS: ConceptTerm[] = [
   {

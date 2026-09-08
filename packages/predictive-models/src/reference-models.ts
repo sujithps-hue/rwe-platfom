@@ -48,9 +48,8 @@ export class ReadmissionRiskModel implements RiskModel {
 }
 
 /**
- * Behavioral-health relapse/crisis risk — the direct analog of NeuroBlu Health's predictive
- * models for clinicians, weighting the NLP-derived suicidal-ideation and SDOH flags alongside
- * utilization signals.
+ * Behavioral-health relapse/crisis risk — a predictive model for clinicians, weighting the
+ * NLP-derived suicidal-ideation and SDOH flags alongside utilization signals.
  */
 export class BehavioralHealthRelapseRiskModel implements RiskModel {
   readonly id = 'relapse-risk-v1';

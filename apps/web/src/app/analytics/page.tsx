@@ -73,7 +73,7 @@ export default function AnalyticsPage() {
       <h1 className="page-title">Cohort Builder</h1>
       <p className="page-subtitle">
         No-code cohort definition against your tenant&apos;s own data, standardized to real OMOP concept_ids
-        (docs/OMOP_VOCABULARY.md) — the NeuroBlu-Analytics-equivalent piece of the platform (docs/PRODUCT.md).
+        (docs/OMOP_VOCABULARY.md) — the Analytics pillar of the platform (docs/PRODUCT.md).
         Returns an aggregate count only; a row-level export is a separate, audited action.
       </p>
 

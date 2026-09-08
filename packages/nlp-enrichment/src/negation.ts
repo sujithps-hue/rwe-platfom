@@ -3,10 +3,9 @@ import { ConceptPolarity } from './types';
 /**
  * Simplified ConText-algorithm-style polarity detection: looks at a fixed window of words
  * preceding a matched term for negation/hypothetical/family-history trigger phrases. This is a
- * deliberately conservative reference implementation — production behavioral-health NLP (what
- * NeuroBlu's own models specialize in) uses trained classifiers, not a fixed trigger list; swap
- * `RuleBasedEnrichmentPipeline` for a model-backed `EnrichmentPipeline` implementation to improve
- * on this.
+ * deliberately conservative reference implementation — production behavioral-health NLP uses
+ * trained classifiers, not a fixed trigger list; swap `RuleBasedEnrichmentPipeline` for a
+ * model-backed `EnrichmentPipeline` implementation to improve on this.
  */
 const NEGATION_TRIGGERS = ['no', 'not', 'denies', 'denied', 'without', 'negative for', 'ruled out', 'no evidence of', 'no history of'];
 const HYPOTHETICAL_TRIGGERS = ['if', 'should', 'monitor for', 'risk of', 'concern for', 'possible', 'could develop'];

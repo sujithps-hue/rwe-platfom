@@ -15,7 +15,7 @@ import { TenantRiskScoreStore } from './tenant-risk-score-store';
 const SCHEMA_NAME_RE = /^tenant_[a-z0-9_]+$/;
 
 /**
- * The Care-Management (NeuroBlu-Health-equivalent) service: assembles a patient's full record
+ * The Care Management service (docs/PRODUCT.md): assembles a patient's full record
  * from their own tenant's CDM schema, scores it with every registered `RiskModel`, and persists
  * the results. A fresh `ModelRegistry` is created per call — never held as a shared singleton —
  * so scoring one tenant's patient can never accidentally reach another tenant's registered model

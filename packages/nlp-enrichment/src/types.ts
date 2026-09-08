@@ -3,8 +3,8 @@ import { ClinicalNote, ConceptPolarity, NlpExtractedConcept } from '@rwe/common-
 /**
  * Pluggable enrichment interface. The platform ships `RuleBasedEnrichmentPipeline` (a terminology/
  * negation-detection reference implementation) as the default; a tenant with a licensed clinical
- * NLP vendor, or the platform operator's own trained models (mirroring NeuroBlu's disease-specific
- * NLP), can implement this interface and register it in place of the default per tenant.
+ * NLP vendor, or the platform operator's own trained, disease-specific models, can implement this
+ * interface and register it in place of the default per tenant.
  */
 export interface EnrichmentPipeline {
   readonly id: string;
