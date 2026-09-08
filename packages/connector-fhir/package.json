@@ -1,0 +1,19 @@
+{
+  "name": "@rwe/connector-fhir",
+  "version": "0.1.0",
+  "description": "Reference EHR connector: FHIR R4 REST over SMART-on-FHIR OAuth2 client-credentials. Works against Epic, Cerner/Oracle Health, and any FHIR R4-compliant EHR.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@rwe/connector-sdk": "*",
+    "@rwe/common-data-model": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "@types/node": "^20.14.0"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "@rwe/connector-sdk",
+  "version": "0.1.0",
+  "description": "The pluggable EHR connector interface + registry. Any EHR/hospital/clinic data source becomes usable by implementing EhrConnector from this package.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@rwe/common-data-model": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "@types/node": "^20.14.0"
+  }
+}

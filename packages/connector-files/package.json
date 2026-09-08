@@ -1,0 +1,19 @@
+{
+  "name": "@rwe/connector-files",
+  "version": "0.1.0",
+  "description": "Reference EHR connector: batch ingestion of HL7v2 (ADT/ORU) messages and CSV flat-file drops, for EHRs/registries without a live API.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@rwe/connector-sdk": "*",
+    "@rwe/common-data-model": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "@types/node": "^20.14.0"
+  }
+}

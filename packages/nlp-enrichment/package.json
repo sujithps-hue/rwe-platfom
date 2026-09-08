@@ -1,0 +1,18 @@
+{
+  "name": "@rwe/nlp-enrichment",
+  "version": "0.1.0",
+  "description": "Pluggable clinical NLP enrichment: extracts SNOMED-coded concepts (symptoms, severity, SDOH) from free-text clinical notes so the Cohort Builder can query unstructured documentation like structured fields.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@rwe/common-data-model": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "@types/node": "^20.14.0"
+  }
+}
