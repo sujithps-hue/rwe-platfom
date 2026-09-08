@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { DsarRequest, DsarRequestType } from './types';
 import { ComplianceEngine } from './engine';
 
@@ -57,7 +58,7 @@ export class DsarService {
     }
     const now = new Date();
     const request: DsarRequest = {
-      id: `dsar-${tenantId}-${Date.now()}`,
+      id: randomUUID(),
       tenantId,
       dataSubjectId,
       type,

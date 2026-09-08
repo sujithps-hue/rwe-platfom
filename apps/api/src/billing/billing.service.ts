@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { getTenantContext } from '../common/tenant-context';
 import { StripeBillingProvider } from './stripe-billing.provider';
@@ -19,8 +19,17 @@ export class BillingService {
     const plan = await this.prisma.subscriptionPlan.findUnique({ where: { code: planCode } });
     if (!plan) throw new NotFoundException(`Unknown plan code "${planCode}"`);
 
-    const customerId = await this.billingProvider.createCustomer(tenant.id, tenant.name, billingEmail);
-    const billingProviderRef = await this.billingProvider.createSubscription(tenant.id, customerId, planCode);
+    let customerId: string;
+    let billingProviderRef: string;
+    try {
+      customerId = await this.billingProvider.createCustomer(tenant.id, tenant.name, billingEmail);
+      billingProviderRef = await this.billingProvider.createSubscription(tenant.id, customerId, planCode);
+    } catch (err) {
+      // StripeBillingProvider is an intentionally unconfigured reference implementation until a
+      // deployment sets STRIPE_SECRET_KEY (see stripe-billing.provider.ts) — surface that as a
+      // clear 503 rather than an opaque 500 "Internal server error".
+      throw new ServiceUnavailableException(err instanceof Error ? err.message : String(err));
+    }
 
     const now = new Date();
     const periodEnd = new Date(now);

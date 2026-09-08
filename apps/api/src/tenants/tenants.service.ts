@@ -83,10 +83,19 @@ export class TenantsService {
   }
 }
 
-/** Naive top-level statement splitter — sufficient for the DDL-only template, which contains no semicolons inside string literals. */
+/**
+ * Naive top-level statement splitter — sufficient for the DDL-only template, which contains no
+ * semicolons inside string literals. Strips `--` line comments *before* splitting: a statement
+ * preceded by a multi-line comment block with no semicolon of its own (as every statement in
+ * tenant_schema_template.sql is) concatenates into one chunk whose trimmed text starts with `--`,
+ * so filtering on "does this chunk start with a comment marker" would incorrectly discard real
+ * statements along with their leading comments — CREATE SCHEMA included, silently breaking every
+ * subsequent CREATE TABLE with "schema does not exist".
+ */
 function splitSqlStatements(sql: string): string[] {
-  return sql
+  const withoutComments = sql.replace(/--.*$/gm, '');
+  return withoutComments
     .split(';')
     .map((s) => s.trim())
-    .filter((s) => s.length > 0 && !s.startsWith('--'));
+    .filter((s) => s.length > 0);
 }
