@@ -1,0 +1,23 @@
+# Build context is the repo root — see Dockerfile.api's note on why (npm workspaces monorepo).
+
+FROM node:20-alpine AS builder
+WORKDIR /repo
+
+COPY package.json package-lock.json* ./
+COPY apps/web ./apps/web
+
+RUN npm install --workspace=apps/web --include-workspace-root
+RUN npm run build --workspace=apps/web
+
+FROM node:20-alpine AS runner
+WORKDIR /repo
+ENV NODE_ENV=production
+
+COPY --from=builder /repo/apps/web/.next ./apps/web/.next
+COPY --from=builder /repo/apps/web/public ./apps/web/public
+COPY --from=builder /repo/apps/web/package.json ./apps/web/package.json
+COPY --from=builder /repo/node_modules ./node_modules
+
+WORKDIR /repo/apps/web
+EXPOSE 3000
+CMD ["npx", "next", "start"]

@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate --workspace=packages/common-data-model
+
+      - name: Build packages
+        run: |
+          npm run build --workspace=packages/compliance-engine
+          npm run build --workspace=packages/common-data-model
+          npm run build --workspace=packages/connector-sdk
+          npm run build --workspace=packages/connector-fhir
+          npm run build --workspace=packages/connector-files
+          npm run build --workspace=packages/nlp-enrichment
+          npm run build --workspace=packages/predictive-models
+
+      - name: Typecheck apps/api
+        run: npm run typecheck --workspace=apps/api
+
+      - name: Build apps/web
+        run: npm run build --workspace=apps/web
