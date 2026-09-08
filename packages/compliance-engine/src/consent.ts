@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { ConsentRecord, ConsentType } from './types';
 
 /**
@@ -46,7 +47,7 @@ export class ConsentService {
     method: string,
   ): Promise<ConsentRecord> {
     const record: ConsentRecord = {
-      id: `${tenantId}-${dataSubjectId}-${purpose}-${Date.now()}`,
+      id: randomUUID(),
       tenantId,
       dataSubjectId,
       purpose,

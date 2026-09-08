@@ -3,6 +3,11 @@
 // (see rls_policies.sql) for tenant isolation, because they are cheap,
 // low-volume, and must be joinable for platform-operator reporting.
 //
+// Every field maps to an explicit snake_case column name (@map) so the physical schema matches
+// the snake_case convention used everywhere else in this codebase's SQL (tenant_schema_template.sql,
+// omop_vocabulary_schema.sql) — Prisma's own camelCase default would otherwise silently diverge
+// from rls_policies.sql's hand-written column references.
+//
 // Clinical data (the OMOP-CDM-inspired tables: person, visit_occurrence,
 // condition_occurrence, drug_exposure, measurement, observation,
 // clinical_note, nlp_extracted_concept) is NOT modeled here — it is
@@ -45,17 +50,17 @@ enum TenantStatus {
 }
 
 model Tenant {
-  id             String        @id @default(uuid())
+  id             String         @id @default(uuid()) @db.Uuid
   name           String
-  slug           String        @unique
-  homeRegion     String // e.g. "us-east", "eu-central", "me-uae", "ap-southeast"
+  slug           String         @unique
+  homeRegion     String         @map("home_region") // e.g. "us-east", "eu-central", "me-uae", "ap-southeast"
   jurisdictions  Jurisdiction[]
-  isolationTier  IsolationTier @default(shared_schema)
-  schemaName     String        @unique // e.g. "tenant_acme" — the Postgres schema holding this tenant's CDM tables
-  status         TenantStatus  @default(provisioning)
-  parentTenantId String? // set for a sub-tenant of a reseller/"platform" tier tenant
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  isolationTier  IsolationTier  @default(shared_schema) @map("isolation_tier")
+  schemaName     String         @unique @map("schema_name") // e.g. "tenant_acme" — the Postgres schema holding this tenant's CDM tables
+  status         TenantStatus   @default(provisioning)
+  parentTenantId String?        @map("parent_tenant_id") @db.Uuid // set for a sub-tenant of a reseller/"platform" tier tenant
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
 
   users          User[]
   consentRecords ConsentRecord[]
@@ -78,13 +83,13 @@ enum RoleName {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  tenantId     String
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
   tenant       Tenant   @relation(fields: [tenantId], references: [id])
   email        String
   role         RoleName
-  ssoSubjectId String?
-  createdAt    DateTime @default(now())
+  ssoSubjectId String?  @map("sso_subject_id")
+  createdAt    DateTime @default(now()) @map("created_at")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -92,16 +97,16 @@ model User {
 }
 
 model ConsentRecord {
-  id           String    @id @default(uuid())
-  tenantId     String
-  tenant       Tenant    @relation(fields: [tenantId], references: [id])
-  dataSubjectId String
-  purpose      String
-  type         String // ConsentType: opt_in | notice_and_opt_out | granular_purpose
-  granted      Boolean
-  grantedAt    DateTime?
-  revokedAt    DateTime?
-  method       String
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  tenant        Tenant    @relation(fields: [tenantId], references: [id])
+  dataSubjectId String    @map("data_subject_id")
+  purpose       String
+  type          String // ConsentType: opt_in | notice_and_opt_out | granular_purpose
+  granted       Boolean
+  grantedAt     DateTime? @map("granted_at")
+  revokedAt     DateTime? @map("revoked_at")
+  method        String
 
   @@index([tenantId, dataSubjectId, purpose])
   @@map("consent_record")
@@ -110,16 +115,16 @@ model ConsentRecord {
 // Append-only: the API's DB role is granted INSERT + SELECT only on this table (no UPDATE/DELETE),
 // enforced in rls_policies.sql, so the audit trail stays tamper-evident.
 model AuditLog {
-  id           String   @id @default(uuid())
-  tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id])
-  actorId      String
-  actorRole    String
+  id           String       @id @default(uuid()) @db.Uuid
+  tenantId     String       @map("tenant_id") @db.Uuid
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+  actorId      String       @map("actor_id")
+  actorRole    String       @map("actor_role")
   action       String
   jurisdiction Jurisdiction
-  resourceType String
-  resourceId   String?
-  occurredAt   DateTime @default(now())
+  resourceType String       @map("resource_type")
+  resourceId   String?      @map("resource_id")
+  occurredAt   DateTime     @default(now()) @map("occurred_at")
   metadata     Json
 
   @@index([tenantId, occurredAt])
@@ -127,14 +132,14 @@ model AuditLog {
 }
 
 model DsarRequestRecord {
-  id            String    @id @default(uuid())
-  tenantId      String
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
   tenant        Tenant    @relation(fields: [tenantId], references: [id])
-  dataSubjectId String
+  dataSubjectId String    @map("data_subject_id")
   type          String // access | rectification | erasure | portability | restriction
-  requestedAt   DateTime  @default(now())
-  dueBy         DateTime
-  fulfilledAt   DateTime?
+  requestedAt   DateTime  @default(now()) @map("requested_at")
+  dueBy         DateTime  @map("due_by")
+  fulfilledAt   DateTime? @map("fulfilled_at")
   status        String // received | in_progress | fulfilled | rejected
 
   @@index([tenantId, status])
@@ -142,31 +147,31 @@ model DsarRequestRecord {
 }
 
 model ConnectorConfigRecord {
-  id                 String   @id @default(uuid())
-  tenantId           String
-  tenant             Tenant   @relation(fields: [tenantId], references: [id])
-  connectorType      String // e.g. "fhir-r4", "hl7v2-file", "csv-file"
-  displayName        String
-  credentialSecretId String // reference into a secrets manager/KMS-wrapped credential store, never a raw secret
+  id                 String    @id @default(uuid()) @db.Uuid
+  tenantId           String    @map("tenant_id") @db.Uuid
+  tenant             Tenant    @relation(fields: [tenantId], references: [id])
+  connectorType      String    @map("connector_type") // e.g. "fhir-r4", "hl7v2-file", "csv-file"
+  displayName        String    @map("display_name")
+  credentialSecretId String    @map("credential_secret_id") // reference into a secrets manager/KMS-wrapped credential store, never a raw secret
   config             Json // non-secret configuration (base URL, resource types to sync, schedule, etc.)
-  lastSyncCursor     String?
-  lastSyncedAt       DateTime?
-  lastSyncStatus     String? // ok | error | never_run
-  consecutiveErrors  Int      @default(0)
-  createdAt          DateTime @default(now())
+  lastSyncCursor     String?   @map("last_sync_cursor")
+  lastSyncedAt       DateTime? @map("last_synced_at")
+  lastSyncStatus     String?   @map("last_sync_status") // ok | error | never_run
+  consecutiveErrors  Int       @default(0) @map("consecutive_errors")
+  createdAt          DateTime  @default(now()) @map("created_at")
 
   @@index([tenantId])
   @@map("connector_config")
 }
 
 model SubscriptionPlan {
-  id                String   @id @default(uuid())
-  code              String   @unique // starter | growth | enterprise | platform
-  name              String
-  includedAllowances Json
-  overageRates      Json
-  monthlyPriceCents Int?
-  createdAt         DateTime @default(now())
+  id                 String   @id @default(uuid()) @db.Uuid
+  code               String   @unique // starter | growth | enterprise | platform
+  name               String
+  includedAllowances Json     @map("included_allowances")
+  overageRates       Json     @map("overage_rates")
+  monthlyPriceCents  Int?     @map("monthly_price_cents")
+  createdAt          DateTime @default(now()) @map("created_at")
 
   subscriptions Subscription[]
 
@@ -174,29 +179,29 @@ model SubscriptionPlan {
 }
 
 model Subscription {
-  id                    String   @id @default(uuid())
-  tenantId              String
-  tenant                Tenant   @relation(fields: [tenantId], references: [id])
-  planId                String
-  plan                  SubscriptionPlan @relation(fields: [planId], references: [id])
-  billingProviderRef    String? // e.g. Stripe subscription id
-  status                String // trialing | active | past_due | canceled
-  currentPeriodStart    DateTime
-  currentPeriodEnd      DateTime
+  id                 String           @id @default(uuid()) @db.Uuid
+  tenantId           String           @map("tenant_id") @db.Uuid
+  tenant             Tenant           @relation(fields: [tenantId], references: [id])
+  planId             String           @map("plan_id") @db.Uuid
+  plan               SubscriptionPlan @relation(fields: [planId], references: [id])
+  billingProviderRef String?          @map("billing_provider_ref") // e.g. Stripe subscription id
+  status             String // trialing | active | past_due | canceled
+  currentPeriodStart DateTime         @map("current_period_start")
+  currentPeriodEnd   DateTime         @map("current_period_end")
 
   @@index([tenantId])
   @@map("subscription")
 }
 
 model UsageRecord {
-  id         String   @id @default(uuid())
-  tenantId   String
-  tenant     Tenant   @relation(fields: [tenantId], references: [id])
-  meter      String // records_ingested | active_seats | cohort_queries | api_calls | storage_gb_month
-  quantity   Float
-  periodStart DateTime
-  periodEnd   DateTime
-  reportedAt DateTime @default(now())
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  meter       String // records_ingested | active_seats | cohort_queries | api_calls | storage_gb_month
+  quantity    Float
+  periodStart DateTime @map("period_start")
+  periodEnd   DateTime @map("period_end")
+  reportedAt  DateTime @default(now()) @map("reported_at")
 
   @@index([tenantId, meter, periodStart])
   @@map("usage_record")
